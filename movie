@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 28 15:58:28 2020
+
+@author: johnl
+"""
+import pandas as pd 
+import numpy as np
+import warnings
+warnings.filterwarnings('ignore')
+
+#df = pd.read_csv('udata.txt', sep='\t',names=['user_id','item_id','rating','timestamp'])
+df = pd.read_csv('udata.txt',sep='\t',names=['user_id','item_id','rating','timestamp'])
+df.head()
+
+movie_titles = pd.read_csv('Movie_Id_Titles',sep=',',names=['item_id','title'])
+movie_titles.head()
+
+df = pd.merge(df, movie_titles, on='item_id')
+df.head()
+
+df.describe()
+
+ratings = pd.DataFrame(df.groupby('title')['rating'].mean())
+ratings.head()
+
+ratings['number_of_ratings'] = df.groupby('title')['rating'].count()
+ratings.head()
+
+import matplotlib.pyplot as plt 
+%matplotlib inline
+ratings['rating'].hist(bins=50) #電影評分
+
+ratings['number_of_ratings'].hist(bins=60) #電影評分數 
+
+import seaborn as sns
+sns.jointplot(x='rating', y='number_of_ratings', data=ratings)  
+
+movie_matrix = df.pivot_table(index='user_id', columns='title', values='rating')
+movie_matrix.head()  #畫pivot table
+
+ratings.sort_values('number_of_ratings', ascending=False).head(10)
+
+AFO_user_rating = movie_matrix['Air Force One (1997)']
+contact_user_rating = movie_matrix['Contact (1997)']
+
+star_user_rating = movie_matrix['Star Wars (1977)']
+
+AFO_user_rating.head()
+contact_user_rating.head()
+
+similar_to_air_force_one=movie_matrix.corrwith(AFO_user_rating) #相關係數
+
+similar_to_air_force_one.head()
+
+similar_to_contact = movie_matrix.corrwith(contact_user_rating)
+
+similar_to_contact.head()
+
+corr_contact = pd.DataFrame(similar_to_contact, columns=['Correlation'])
+corr_contact.dropna(inplace=True)
+corr_contact.head()
+corr_AFO = pd.DataFrame(similar_to_air_force_one, columns=['correlation'])
+corr_AFO.dropna(inplace=True)
+corr_AFO.head()
+
+corr_AFO = corr_AFO.join(ratings['number_of_ratings'])
+corr_contact = corr_contact.join(ratings['number_of_ratings'])
+corr_AFO .head()
+corr_contact.head()
+
+corr_AFO[corr_AFO['number_of_ratings'] > 100].sort_values(by='correlation', ascending=False).head(10)
+
+corr_contact[corr_contact['number_of_ratings'] > 100].sort_values(by='Correlation', ascending=False).head(10)
+
+#接下來匯入KMeans函式庫
+from sklearn.cluster import KMeans
+
+#請KMeans分成三類
+clf = KMeans(n_clusters=5)
+print(clf)
+
+clf.fit(ratings)
+
+#取得預測結果
+clf.labels_
+
+
+#最後畫出來看看
+#分成三類
+plt.scatter(ratings['rating'],ratings['number_of_ratings'], c=clf.labels_)
+
+df = pd.DataFrame()
+df["rating"] = ratings['rating']
+df["number_of_ratings"] = ratings['number_of_ratings']
+df["label"] = clf.labels_
+df.head()
+
+
+df.to_csv('movie_kmeans.csv', index=True)
