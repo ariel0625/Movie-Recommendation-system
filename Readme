@@ -1,0 +1,6 @@
+
+Movie-Recommendation-system
+
+Category movie according to ratings and number of ratings. 
+
+Tools: pandas, numpy, matplotlib, KMeans
